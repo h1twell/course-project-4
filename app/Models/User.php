@@ -13,11 +13,15 @@ class User extends Authenticatable
     protected $fillable = [
         'roles_id', 'username', 'email', 'password', 'avatar', 'gender',
     ];
-
+    // Устанавливаем значение по умолчанию для roles_id
+    protected $attributes = [
+        'roles_id' => 2, // Пользователь по умолчанию
+    ];
     public function role()
     {
         return $this->belongsTo(Role::class);
     }
+
 
     public function ratings()
     {

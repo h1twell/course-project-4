@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -43,10 +44,12 @@ class UserController extends Controller
     // Обновить данные пользователя
     public function update(Request $request, $id)
     {
-        $data = $request->validate([
-            'name' => 'string|max:255',
-            'email' => 'email|unique:users,email,' . $id,
-            'password' => 'nullable|string|min:6',
+       $request->validate([
+           'username' => 'nullable|string|min:3|max:255',
+           'password' => 'nullable|string|min:6|confirmed',
+           'email' => 'nullable|string|email|max:255|unique:users',
+           'gender' => 'nullable|string|in:male,female,other',
+           'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Поле изображения опционально
         ]);
 
         $user = User::find($id);
@@ -55,12 +58,31 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        if (isset($data['password'])) {
-            $data['password'] = bcrypt($data['password']);
+        // Обновляем поля модели только если они предоставлены в запросе
+        if ($request->has('username')) $user->username = $request->username;
+        if ($request->has('password')) $user->password = $request->password;
+        if ($request->has('email')) $user->email = $request->email;
+        if ($request->has('gender')) $user->gender = $request->gender;
+
+        // Если предоставлено новое изображение, загружаем его
+        if ($request->hasFile('avatar')) {
+            // Удаляем старое изображение, если оно существует
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            // Сохраняем новое изображение
+            $imagePath = $request->file('avatar')->store('avatar', 'public');
+            $user->avatar = $imagePath;
         }
 
-        $user->update($data);
-        return response()->json($user);
+        // Сохраняем изменения в базе данных
+        $user->save();
+
+        return response()->json([
+            'message' => 'Пользователь успешно обновлен.',
+            'user' => $user
+        ], 200);
     }
 
     // Удалить пользователя

@@ -9,11 +9,13 @@ class CreateMovieActorsTable extends Migration
     public function up()
     {
         Schema::create('movie_actors', function (Blueprint $table) {
-            $table->foreignId('movie_id')->constrained('movies'); // MovieID
-            $table->foreignId('actor_id')->constrained('actors'); // ActorID
+            $table->id();
+            $table->foreignId('actor_id')->constrained('actors')->onDelete('cascade');
+            $table->foreignId('movie_id')->constrained('movies')->onDelete('cascade');
             $table->timestamps();
         });
     }
+
 
     public function down()
     {
